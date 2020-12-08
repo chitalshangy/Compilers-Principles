@@ -2,7 +2,63 @@
 
 //创建First集合
 void Source::make_First(char E) {
-
+	int i = symbol.at(E);
+	if (First[i].is)return;
+	First[i].len = 0;
+	//遍历所有产生式
+	for (int j = 0; j < count; ++j) {
+		//查找该非终结符所在产生式
+		if (Gra_Set[j].P[0] == E) {
+			//指向产生式右边字符的指针
+			int x = 3;
+			if (!is_non_Ter(Gra_Set[j].P[x])) {
+				Set n;
+				n.is = true;
+				n.len = 1;
+				n.set[0] = Gra_Set[j].P[x];
+				First[i] = add_Null(First[i],n);
+			}
+			if (is_non_Ter(Gra_Set[j].P[x])) {
+				if (Gra_Set[j].P[x] == E) {
+					continue;
+				}
+				if (is_first(Gra_Set[j].P[x])) {
+					First[i] = add(First[i], First[symbol.at(Gra_Set[j].P[x])]);
+				}
+				else {
+					make_First(Gra_Set[j].P[x]);
+					First[i] = add(First[i], First[symbol.at(Gra_Set[j].P[x])]);
+				}
+				while (is_Null(Gra_Set[j].P[x])) {
+					x++;
+					if (x >= Gra_Set[j].len) {
+						Set n;
+						n.is = true;
+						n.len = 1;
+						n.set[0] = '#';
+						First[i] = add_Null(First[i],n);
+						break;
+					}
+					if (!is_non_Ter(Gra_Set[j].P[x])){
+						Set n;
+							n.is=true;
+							n.len=1;
+							n.set[0]=Gra_Set[j].P[x];
+							First[i]=add_Null(First[i],n);
+							break;
+					}
+					if (is_first(Gra_Set[j].P[x])) {
+						First[i] = add(First[i], First[symbol.at(Gra_Set[j].P[x])]);
+					}
+					else {
+						make_First(Gra_Set[j].P[x]);
+						First[i] = add(First[i], First[symbol.at(Gra_Set[j].P[x])]);
+					}
+				}
+			}
+		}
+	}
+	First[i].is = true;
 }
 
 //创建Follow集合
