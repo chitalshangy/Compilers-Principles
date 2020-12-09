@@ -35,7 +35,7 @@ void Source::make_First(char E) {
 						Set n;
 						n.is = true;
 						n.len = 1;
-						n.set[0] = '#';
+						n.set[0] = '~';
 						First[i] = add_Null(First[i],n);
 						break;
 					}
@@ -63,7 +63,88 @@ void Source::make_First(char E) {
 
 //创建Follow集合
 void Source::make_Follow(char E) {
-
+	bool flag = true;
+	for (int i = 0; i < n_Ter.size(); ++i) {
+		Follow[i].len = 0;
+	}
+	while (flag) {
+		flag = false;
+		for (int i = 0; i < n_Ter.size(); ++i) {
+			char E = n_Ter[i];
+			if (E == Gra_Set[0].P[0]) {
+				Set n;
+				n.is = true;
+				n.len = 1;
+				n.set[0] = '#';
+				Follow[i] = add_Null(Follow[i], n);
+			}
+			for (int j = 0; j < count; ++j) { 
+				if (is_Have(Gra_Set[j], E) != 0) {
+					int x = is_Have(Gra_Set[j], E);
+					if (x >= Gra_Set[j].len - 1) { 
+						if (is_follow(Gra_Set[j].P[0])) { 
+							int before = Follow[i].len;
+							Follow[i] = add(Follow[i], Follow[symbol.at(Gra_Set[j].P[0])]);
+							if (before != Follow[i].len) {
+								flag = true;
+							}
+						}
+						else {
+							flag = true;
+						}
+					}
+					else {
+						Set str;
+						str.len = 0;
+						while (x < Gra_Set[j].len - 1) {
+							x++;
+							if (is_non_Ter(Gra_Set[j].P[x])) {
+								if (is_first(Gra_Set[j].P[x])) { 
+									str = add(str, First[symbol.at(Gra_Set[j].P[x])]);
+								}
+								else {
+									make_First(Gra_Set[j].P[x]);
+									str = add(str, First[symbol.at(Gra_Set[j].P[x])]);
+								}
+								if (is_Null(Gra_Set[j].P[x])) {
+									if (x == Gra_Set[j].len - 1) {
+										Set n;
+										n.is = true;
+										n.len = 1;
+										n.set[0] = '~';
+										str = add_Null(str, n);
+									}
+									continue;
+								}
+								else {	
+									break;
+								}
+							}
+							else { 
+								Set n;
+								n.is = true;
+								n.len = 1;
+								n.set[0] = Gra_Set[j].P[x];
+								str = add_Null(str, n);
+								break;
+							}
+						}
+						int before = Follow[i].len;
+						Follow[i] = add(Follow[i], str);
+						for (int z = 0; z < str.len; ++z) {
+							if (str.set[z] == '~') {
+								Follow[i] = add(Follow[i], Follow[symbol.at(Gra_Set[j].P[0])]);
+							}
+						}
+						if (before != Follow[i].len) {
+							flag = true;
+						}
+					}
+				}
+			}
+			Follow[i].is = true;
+		}
+	}
 }
 
 //判断是否为非终结符
@@ -104,13 +185,13 @@ bool Source::is_follow(char E) {
 	return false;
 }
 
-//判断E是否能推出#
+//判断E是否能推出~
 bool Source::is_Null(char E) {
 	if (!First[symbol.at(E)].is) {
 		make_First(E);
 	}
 	for (int i = 0; i < First[symbol.at(E)].len; ++i) {
-		if (First[symbol.at(E)].set[i] == '#') {
+		if (First[symbol.at(E)].set[i] == '~') {
 			return true;
 		}
 	}
@@ -131,7 +212,7 @@ int Source::is_Have(Grammer g, char E) {
 Set Source::add(Set s1, Set s2) {
 	if (s1.len == 0) {
 		for (int i = 0; i < s2.len; ++i) {
-			if (s2.set[i] == '#') {
+			if (s2.set[i] == '~') {
 				s2.set[i] = s2.set[s2.len - 1];
 				s2.len--;
 			}
@@ -144,7 +225,7 @@ Set Source::add(Set s1, Set s2) {
 			if (s2.set[i] == s1.set[j]) {
 				break;
 			}
-			if (j == s1.len - 1 && s2.set[i] != '#') {
+			if (j == s1.len - 1 && s2.set[i] != '~') {
 				s1.set[s1.len] = s2.set[i];
 				s1.len++;
 			}
@@ -173,7 +254,63 @@ Set Source::add_Null(Set s1, Set s2) {
 
 //构造预测分析表
 void Source::make_A_Table() {
-	
+	for (int i = 0; i < count; ++i) { //遍历所有的产生式
+		int x = 3;
+		//cout<<gramOldSet[i].formula<<endl;
+		//产生式右边串的first集合
+		Set st;
+		st.len = 0;
+		while (x < Gra_Set[i].len) {
+			if (is_non_Ter(Gra_Set[i].P[x])) { //该字符是非终结符
+				//该终结符的非空字符并入first
+				if (is_first(Gra_Set[i].P[x])) { //当前非终结符其FIRST集已求出
+					st = add(st, First[symbol.at(Gra_Set[i].P[x])]);//其first集合的非@元素交集并入
+				}
+				else {
+					printf("error!\n");
+				}
+				if (is_Null(Gra_Set[i].P[x])) {//该非终结符能推出@
+					if (x == Gra_Set[i].len - 1) {//所有字符都能推出@
+						Set n;
+						n.is = true;
+						n.len = 1;
+						n.set[0] = '~';
+						st = add_Null(st, n);//将@加入first集
+					}
+					x++;
+					continue;//继续循环
+				}
+				else {	//该非终结符不能推出@
+					break;//停止循环
+				}
+			}
+			else { //字符是终结符
+				Set n;
+				n.is = true;
+				n.len = 1;
+				n.set[0] = Gra_Set[i].P[x];
+				st = add_Null(st, n);//将该终结符加入first集
+				break;
+			}
+			x++;
+		}
+
+		for (int j = 0; j < st.len; ++j) {
+			if (st.set[j] == '~') {
+				for (int z = 0; z < Follow[symbol.at(Gra_Set[i].P[0])].len; ++z) {
+					int x = symbol.at(Gra_Set[i].P[0]);
+					int y = symbol.at(Follow[symbol.at(Gra_Set[i].P[0])].set[z]);
+					A_Table[x][y] = Gra_Set[i].P;
+				}
+			}
+			else {
+				int x = symbol.at(Gra_Set[i].P[0]);
+				int y = symbol.at(st.set[j]);
+				A_Table[x][y] = Gra_Set[i].P;
+			}
+		}
+
+	}
 }
 
 //构造函数
