@@ -3,5 +3,5 @@
 class Grammer {
 public:
 	char P[200];//产生式
-	int len;
+	int len;//产生式长度
 };

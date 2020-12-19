@@ -11,6 +11,8 @@ void Source::make_First(char E) {
 		if (Gra_Set[j].P[0] == E) {
 			//指向产生式右边字符的指针
 			int x = 3;
+
+			//终结符直接放入first集合
 			if (!is_non_Ter(Gra_Set[j].P[x])) {
 				Set n;
 				n.is = true;
@@ -18,19 +20,28 @@ void Source::make_First(char E) {
 				n.set[0] = Gra_Set[j].P[x];
 				First[i] = add_Null(First[i],n);
 			}
+
+			//非终结符
 			if (is_non_Ter(Gra_Set[j].P[x])) {
+				//和产生式左边的符号相等，则不处理
 				if (Gra_Set[j].P[x] == E) {
 					continue;
 				}
+				//1、第一种情况
+				//判断其first集合是否已经求出，已求出则直接加入并入左边符号的first集合
 				if (is_first(Gra_Set[j].P[x])) {
 					First[i] = add(First[i], First[symbol.at(Gra_Set[j].P[x])]);
 				}
+				//否则求其first集合，并入
 				else {
 					make_First(Gra_Set[j].P[x]);
 					First[i] = add(First[i], First[symbol.at(Gra_Set[j].P[x])]);
 				}
+
+				//2、第二种情况，如果可以推出~
 				while (is_Null(Gra_Set[j].P[x])) {
 					x++;
+					//3、第三种情况，如果可以推出~并且第二种情况的遍历完结，将~并入
 					if (x >= Gra_Set[j].len) {
 						Set n;
 						n.is = true;
@@ -39,14 +50,16 @@ void Source::make_First(char E) {
 						First[i] = add_Null(First[i],n);
 						break;
 					}
+					//是终结符，直接并入
 					if (!is_non_Ter(Gra_Set[j].P[x])){
 						Set n;
-							n.is=true;
-							n.len=1;
-							n.set[0]=Gra_Set[j].P[x];
-							First[i]=add_Null(First[i],n);
-							break;
+						n.is=true;
+						n.len=1;
+						n.set[0]=Gra_Set[j].P[x];
+						First[i]=add_Null(First[i],n);
+						break;
 					}
+					//不是终结符，需要排除符号first集中的~
 					if (is_first(Gra_Set[j].P[x])) {
 						First[i] = add(First[i], First[symbol.at(Gra_Set[j].P[x])]);
 					}
@@ -62,15 +75,22 @@ void Source::make_First(char E) {
 }
 
 //创建Follow集合
-void Source::make_Follow(char E) {
+void Source::make_Follow() {
 	bool flag = true;
+
+	//首先初始化为空
 	for (int i = 0; i < n_Ter.size(); ++i) {
 		Follow[i].len = 0;
 	}
+
 	while (flag) {
 		flag = false;
+
+		//遍历每一个非终结符
 		for (int i = 0; i < n_Ter.size(); ++i) {
 			char E = n_Ter[i];
+
+			//如果当前符号为输入文法的开始符号，将#加入其follow集合
 			if (E == Gra_Set[0].P[0]) {
 				Set n;
 				n.is = true;
@@ -78,11 +98,18 @@ void Source::make_Follow(char E) {
 				n.set[0] = '#';
 				Follow[i] = add_Null(Follow[i], n);
 			}
+
 			for (int j = 0; j < count; ++j) { 
+
+				//找出右边含有E的产生式
 				if (is_Have(Gra_Set[j], E) != 0) {
 					int x = is_Have(Gra_Set[j], E);
+
+					//如果E在产生式的末尾：A->...E；
 					if (x >= Gra_Set[j].len - 1) { 
+						//如果产生式j左边符号的follow已经求出，则并入E的follow：A->...E，follow(E)=follow(E)+follow(E)；
 						if (is_follow(Gra_Set[j].P[0])) { 
+							//before用来判断E的follow集合是否已经全部求出
 							int before = Follow[i].len;
 							Follow[i] = add(Follow[i], Follow[symbol.at(Gra_Set[j].P[0])]);
 							if (before != Follow[i].len) {
@@ -93,11 +120,13 @@ void Source::make_Follow(char E) {
 							flag = true;
 						}
 					}
+					//如果E不在产生式末尾：A->...E...；
 					else {
-						Set str;
+						Set str;//存储E后面的first集合
 						str.len = 0;
 						while (x < Gra_Set[j].len - 1) {
 							x++;
+							//E后面的如果是非终结符，follow(E)=follow(E)+first(...)
 							if (is_non_Ter(Gra_Set[j].P[x])) {
 								if (is_first(Gra_Set[j].P[x])) { 
 									str = add(str, First[symbol.at(Gra_Set[j].P[x])]);
@@ -106,6 +135,7 @@ void Source::make_Follow(char E) {
 									make_First(Gra_Set[j].P[x]);
 									str = add(str, First[symbol.at(Gra_Set[j].P[x])]);
 								}
+								//E后面的非终结符可以推出~，follow(E)=follow(E)+~
 								if (is_Null(Gra_Set[j].P[x])) {
 									if (x == Gra_Set[j].len - 1) {
 										Set n;
@@ -120,6 +150,7 @@ void Source::make_Follow(char E) {
 									break;
 								}
 							}
+							//如果是终结符，直接并入
 							else { 
 								Set n;
 								n.is = true;
@@ -129,6 +160,7 @@ void Source::make_Follow(char E) {
 								break;
 							}
 						}
+						//合并入E的follow集中
 						int before = Follow[i].len;
 						Follow[i] = add(Follow[i], str);
 						for (int z = 0; z < str.len; ++z) {
@@ -136,6 +168,7 @@ void Source::make_Follow(char E) {
 								Follow[i] = add(Follow[i], Follow[symbol.at(Gra_Set[j].P[0])]);
 							}
 						}
+						//同样也是判断E是否需要继续执行follow生成算法
 						if (before != Follow[i].len) {
 							flag = true;
 						}
@@ -158,7 +191,7 @@ bool Source::is_non_Ter(char E) {
 }
 
 //判断E是否已存在
-bool Source::is_Symbol(char E) {
+bool Source::is_Exit(char E) {
 	for (int i = 0; i < Symbol.size(); ++i) {
 		if (Symbol[i] == E) {
 			return true;
@@ -256,31 +289,31 @@ Set Source::add_Null(Set s1, Set s2) {
 void Source::make_A_Table() {
 	for (int i = 0; i < count; ++i) { //遍历所有的产生式
 		int x = 3;
-		//cout<<gramOldSet[i].formula<<endl;
 		//产生式右边串的first集合
 		Set st;
 		st.len = 0;
 		while (x < Gra_Set[i].len) {
-			if (is_non_Ter(Gra_Set[i].P[x])) { //该字符是非终结符
+			//该字符是非终结符
+			if (is_non_Ter(Gra_Set[i].P[x])) { 
 				//该终结符的非空字符并入first
 				if (is_first(Gra_Set[i].P[x])) { //当前非终结符其FIRST集已求出
-					st = add(st, First[symbol.at(Gra_Set[i].P[x])]);//其first集合的非@元素交集并入
+					st = add(st, First[symbol.at(Gra_Set[i].P[x])]);//其first集合的非~元素交集并入
 				}
 				else {
-					printf("error!\n");
+					cout << "error!!!" << endl;
 				}
-				if (is_Null(Gra_Set[i].P[x])) {//该非终结符能推出@
-					if (x == Gra_Set[i].len - 1) {//所有字符都能推出@
+				if (is_Null(Gra_Set[i].P[x])) {//该非终结符能推出~
+					if (x == Gra_Set[i].len - 1) {//所有字符都能推出~
 						Set n;
 						n.is = true;
 						n.len = 1;
 						n.set[0] = '~';
-						st = add_Null(st, n);//将@加入first集
+						st = add_Null(st, n);//将~加入first集
 					}
 					x++;
 					continue;//继续循环
 				}
-				else {	//该非终结符不能推出@
+				else {	//该非终结符不能推出~
 					break;//停止循环
 				}
 			}
@@ -321,7 +354,7 @@ Source::Source() {
 	symbol.clear();
 	for (int i = 0; i < 100; ++i) {
 		for (int j = 0; j < 100; ++j) {
-			A_Table[i][j] = "error";
+			A_Table[i][j] = "null";
 		}
 	}
 }
