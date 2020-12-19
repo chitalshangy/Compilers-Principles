@@ -5,6 +5,30 @@
 #include"Source.h"
 using namespace std;
 
+/*测试数据（输入需为标准LL(1)文法）
+E->TA
+A->+TA
+A->~
+T->FB
+B->*FB
+B->~
+F->(E)
+F->a
+
+此项测试结果在书本P130
+
+或
+
+E->TK
+K->+TK
+K->~
+T->FM
+M->*FM
+M->~
+F->i
+F->(E)
+*/
+
 int main() {
 	Source source;
 	cout << "请输入产生式：（‘~’表示空）：" << endl;
