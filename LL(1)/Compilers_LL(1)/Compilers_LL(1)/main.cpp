@@ -75,7 +75,7 @@ int main() {
 
 	source.symbol.insert(pair<char, int>('#', 99 - (source.Ter.size() - 1)));
 
-	cout << "产生式的个数：" << source.count << endl<<endl;
+	//cout << "产生式的个数：" << source.count << endl<<endl;
 
 	cout << "非终结符：" << endl;
 	for (int j = 0; j < source.n_Ter.size(); ++j) {

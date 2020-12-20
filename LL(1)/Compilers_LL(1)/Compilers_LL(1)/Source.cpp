@@ -290,14 +290,14 @@ void Source::make_A_Table() {
 	for (int i = 0; i < count; ++i) { //遍历所有的产生式
 		int x = 3;
 		//产生式右边串的first集合
-		Set st;
-		st.len = 0;
+		Set tmp;
+		tmp.len = 0;
 		while (x < Gra_Set[i].len) {
 			//该字符是非终结符
 			if (is_non_Ter(Gra_Set[i].P[x])) { 
 				//该终结符的非空字符并入first
-				if (is_first(Gra_Set[i].P[x])) { //当前非终结符其FIRST集已求出
-					st = add(st, First[symbol.at(Gra_Set[i].P[x])]);//其first集合的非~元素交集并入
+				if (is_first(Gra_Set[i].P[x])) {
+					tmp = add(tmp, First[symbol.at(Gra_Set[i].P[x])]);//其first集合的非~元素交集并入
 				}
 				else {
 					cout << "error!!!" << endl;
@@ -308,7 +308,7 @@ void Source::make_A_Table() {
 						n.is = true;
 						n.len = 1;
 						n.set[0] = '~';
-						st = add_Null(st, n);//将~加入first集
+						tmp = add_Null(tmp, n);//将~加入first集
 					}
 					x++;
 					continue;//继续循环
@@ -322,14 +322,15 @@ void Source::make_A_Table() {
 				n.is = true;
 				n.len = 1;
 				n.set[0] = Gra_Set[i].P[x];
-				st = add_Null(st, n);//将该终结符加入first集
+				tmp = add_Null(tmp, n);//将该终结符加入first集
 				break;
 			}
 			x++;
 		}
-
-		for (int j = 0; j < st.len; ++j) {
-			if (st.set[j] == '~') {
+		
+		//开始建表
+		for (int j = 0; j < tmp.len; ++j) {
+			if (tmp.set[j] == '~') {
 				for (int z = 0; z < Follow[symbol.at(Gra_Set[i].P[0])].len; ++z) {
 					int x = symbol.at(Gra_Set[i].P[0]);
 					int y = symbol.at(Follow[symbol.at(Gra_Set[i].P[0])].set[z]);
@@ -338,7 +339,7 @@ void Source::make_A_Table() {
 			}
 			else {
 				int x = symbol.at(Gra_Set[i].P[0]);
-				int y = symbol.at(st.set[j]);
+				int y = symbol.at(tmp.set[j]);
 				A_Table[x][y] = Gra_Set[i].P;
 			}
 		}
